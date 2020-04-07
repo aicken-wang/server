@@ -726,7 +726,7 @@ static void fil_flush_low(fil_space_t* space, bool metadata = false)
 
 		mutex_exit(&fil_system.mutex);
 
-		os_file_flush(node->handle);
+		os_file_flush_data(node->handle);
 
 		mutex_enter(&fil_system.mutex);
 
