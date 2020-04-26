@@ -7945,3 +7945,5 @@ ER_PART_STARTS_BEYOND_INTERVAL
         eng "%`s: STARTS is later than query time, first history partition may exceed INTERVAL value"
 ER_GALERA_REPLICATION_NOT_SUPPORTED
 	eng "DDL-statement is forbidden as table storage engine does not support Galera replication"
+ER_JSON_TABLE_ERROR_ON_FIELD
+        eng "Field '%s' can't be set for JSON_TABLE '%s'."

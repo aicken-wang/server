@@ -49,6 +49,7 @@
 #include "transaction.h"
 #include "sql_prepare.h"
 #include "sql_statistics.h"
+#include "table_function.h"
 #include "sql_cte.h"
 #include <m_ctype.h>
 #include <my_dir.h>
@@ -3722,6 +3723,14 @@ open_and_process_table(THD *thd, TABLE_LIST *tables, uint *counter, uint flags,
     error= TRUE;
     goto end;
   }
+
+  if (tables->table_function)
+  {
+    if (!create_table_for_function(thd, tables))
+      error= TRUE;
+    goto end;
+  }
+
   DBUG_PRINT("tcache", ("opening table: '%s'.'%s'  item: %p",
                         tables->db.str, tables->table_name.str, tables));
   (*counter)++;

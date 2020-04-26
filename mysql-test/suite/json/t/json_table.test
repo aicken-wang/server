@@ -1,0 +1,59 @@
+select * from json_table('[{"a": 1, "b": [11,111]}, {"a": 2, "b": [22,222]}]', '$[*]' COLUMNS( a INT PATH '$.a')) as tt;
+
+select * from JSON_TABLE( '[ {"a": 1, "b": [11,111]}, {"a": 2, "b": [22,222]}, {"a":3}]', '$[*]' COLUMNS( a INT PATH '$.a', NESTED PATH '$.b[*]' COLUMNS (b INT PATH '$'))) as jt;
+
+SELECT *  FROM   JSON_TABLE( '[ {"a": 1, "b": [11,111]}, {"a": 2, "b": [22,222]}, {"a":3}]', '$[*]' COLUMNS( a INT PATH '$.a', NESTED PATH '$.b[*]' COLUMNS (b INT PATH '$'), NESTED PATH '$.b[*]' COLUMNS (c INT PATH '$') ) ) jt;
+
+create table t1 (id varchar(5), json varchar(1024));
+insert into t1 values ('j1', '[{"a": 1, "b": [11,111]}, {"a": 2, "b": [22,222]}]');
+insert into t1 values ('j2', '[{"a": 3, "b": [11,111]}, {"a": 4, "b": [22,222]}, {"a": 5, "b": [22,222]}]');
+select id, json, a from t1, json_table(t1.json, '$[*]' COLUMNS(js_id FOR ORDINALITY, a INT PATH '$.a')) as tt;
+select * from t1, JSON_TABLE(t1.json, '$[*]' COLUMNS(js_id FOR ORDINALITY, a INT PATH '$.a', NESTED PATH '$.b[*]' COLUMNS (l_js_id FOR ORDINALITY, b INT PATH '$'))) as jt;
+--error ER_BAD_FIELD_ERROR
+select * from t1, JSON_TABLE(t1.no_field, '$[*]' COLUMNS(js_id FOR ORDINALITY, a INT PATH '$.a', NESTED PATH '$.b[*]' COLUMNS (l_js_id FOR ORDINALITY, b INT PATH '$'))) as jt;
+
+--error ER_DUP_FIELDNAME
+select * from t1, JSON_TABLE(t1.no_field, '$[*]' COLUMNS(js_id FOR ORDINALITY, a INT PATH '$.a', NESTED PATH '$.b[*]' COLUMNS (l_js_id FOR ORDINALITY, a INT PATH '$'))) as jt;
+
+DROP TABLE t1;
+
+create table t1 (item_name varchar(32), item_props varchar(1024));
+insert into t1 values ('Laptop', '{"color": "black", "price": 1000}');
+insert into t1 values ('Jeans',  '{"color": "blue", "price": 50}');
+
+select * from t1 left join json_table(t1.item_props,'$' columns( color varchar(100) path '$.color')) as T on 1;
+
+DROP TABLE t1;
+
+select * from JSON_TABLE( '[ {"xa": 1, "b": [11,111]}, {"a": 2, "b": [22,222]}, {"a":3}]', '$[*]' COLUMNS( a INT PATH '$.a' default '101' on empty, NESTED PATH '$.b[*]' COLUMNS (b INT PATH '$'))) as jt;
+
+select * from JSON_TABLE( '[ {"xa": 1, "b": [11,111]}, {"a": 2, "b": [22,222]}, {"a":3}]', '$[*]' COLUMNS( a INT PATH '$.a' default '202' on error, NESTED PATH '$.b[*]' COLUMNS (b INT PATH '$'))) as jt;
+
+select * from JSON_TABLE( '[ {"a": [1, 2], "b": [11,111]}, {"a": 2, "b": [22,222]}, {"a":3}]', '$[*]' COLUMNS( a INT PATH '$.a' default '101' on empty, NESTED PATH '$.b[*]' COLUMNS (b INT PATH '$'))) as jt;
+
+select * from JSON_TABLE( '[ {"a": [1, 2], "b": [11,111]}, {"a": 2, "b": [22,222]}, {"a":3}]', '$[*]' COLUMNS( a INT PATH '$.a' default '202' on error default '101' on empty, NESTED PATH '$.b[*]' COLUMNS (b INT PATH '$'))) as jt;
+
+--error ER_JSON_SYNTAX
+select * from JSON_TABLE( '[{"a": [1, 2], "b": [11,111]}, {"a": 2, "b": [22,222]}, {"a":3} xx YY]', '$[*]' COLUMNS( a INT PATH '$.a' default '202' on error default '101' on empty, NESTED PATH '$.b[*]' COLUMNS (b INT PATH '$'))) as jt;
+
+--error ER_JSON_TABLE_ERROR_ON_FIELD
+select * from JSON_TABLE( '[{"a": [1, 2], "b": [11,111]}, {"a": 2, "b": [22,222]}, {"a":3}]', '$[*]' COLUMNS( a INT PATH '$.a' error on error default '101' on empty, NESTED PATH '$.b[*]' COLUMNS (b INT PATH '$'))) as jt;
+
+#
+# MDEV-22290 JSON_TABLE: Decimal type with M equal D causes Assertion
+#    `scale <= precision' failure
+#
+select * from json_table('{"a":0}',"$" columns(a decimal(1,1) path '$.a')) foo;
+
+
+#
+# MDEV-22291 JSON_TABLE: SELECT from json_table does not work without default database
+#
+connect (con1,localhost,root,,);
+select a from json_table('{"a":0}',"$" columns(a for ordinality)) foo;
+connection default;
+disconnect con1;
+
+--echo #
+--echo # End of 10.5 tests
+--echo #
